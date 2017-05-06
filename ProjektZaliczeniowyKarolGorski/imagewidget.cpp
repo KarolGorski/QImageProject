@@ -12,7 +12,6 @@ using namespace std;
 
 ImageWidget::ImageWidget(QWidget *parent): QWidget(parent)
 {
-
 DrawWhiteCard(512,512);
 transX=0;
 transY=0;
@@ -42,7 +41,7 @@ void ImageWidget::keyPressEvent(QKeyEvent * e)
     }
 
     if(e->key()==Qt::Key_O){
-        DrawCircleBresenham(qRgb(255,0,0),QPoint(255,255),50);
+        DrawCircleBresenham(qRgb(0,0,0),QPoint(255,255),50);
         manageTempImage();
 
     }
@@ -56,8 +55,8 @@ void ImageWidget::keyPressEvent(QKeyEvent * e)
     }
     if(e->key()==Qt::Key_A){
         //Aby użyć Algorytmu Smitha potrzebne jest coś do wypełniania, proszę użyć funkcji wyżej :)
-        //Ostatnio ta funkcja wyżej przestała mi chodzić. Ah ten Qt. Ale udoskonaliłem Smitha tak, żeby malował nawet białą kartę :D
-        //Można sprawdzić ten algorytm za pomocą N i np figury koła :D
+        //Ostatnio ta funkcja wyżej przestała mi chodzić. Tak po prostu. Nie mam pojęcia jak to naprawić.
+        //Ale udoskonaliłem Smitha tak, żeby malował nawet białą kartę :D
                SmithAlgorithm(qRgb(255,0,0),QPoint(279,371));
                manageTempImage();
     }
@@ -219,6 +218,7 @@ void ImageWidget::DrawLabirynth()
 {
     image=QImage(QCoreApplication::applicationDirPath()+"Labirynt.png");
     resultImage=image;
+    manageTempImage();
 }
 
 
