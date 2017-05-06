@@ -1,6 +1,7 @@
 #include <QWidget>
 #include <QImage>
 
+
 class ImageWidget : public QWidget
 {
     QImage image;
@@ -17,6 +18,11 @@ protected: //wszelkie funkcje
 
     void DrawWhiteCard(int x, int y);
     void DrawLineWithAntialiasing(QRgb color, QPoint startP, QPoint endP);
+    void IntensifyPixel(QRgb color, int x, int y, double distance);
+    void DrawCircleBresenham(QRgb color, QPoint centerP, int r);
+    void DrawCurveBezierWithCasteljau(QRgb color, QPoint P1, QPoint P2, QPoint P3, QPoint P4);
+    void DrawLabirynth();
+    void SmithAlgorithm(QRgb color, QPoint punkt);
 public:
     ImageWidget(QWidget *parent = 0);
 };

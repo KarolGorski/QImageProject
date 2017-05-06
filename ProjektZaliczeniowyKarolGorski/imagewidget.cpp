@@ -4,12 +4,15 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <stack>
+#include <conio.h>
 using namespace std;
 
 ImageWidget::ImageWidget(QWidget *parent): QWidget(parent)
 {
-DrawWhiteCard(512,512);
 
+DrawWhiteCard(512,512);
+//DrawLabirynth();
 
 }
 
@@ -19,13 +22,18 @@ void ImageWidget::DrawWhiteCard(int x, int y)
     image.fill(qRgb(255,255,255));
     resultImage=image;
 }
+void ImageWidget::DrawLabirynth()
+{
+    image=QImage("Labirynt.png");
+    resultImage=image;
+}
+
 
 void ImageWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.drawImage(0,0,resultImage);
 }
-
 
 void ImageWidget::DrawPoint(QRgb color, int x,int y)
 {
@@ -39,8 +47,8 @@ void ImageWidget::TwoColorGradient(int n, QRgb startColor, QRgb endColor)
     for(int y=0;y<image.height();y++)
     {
         licznik=ceil(image.width()/(float)n);
-        QRgb* pd = (QRgb*)resultImage.scanLine(y);
-        QRgb* ps = (QRgb*)image.scanLine(y);
+       // QRgb* pd = (QRgb*)resultImage.scanLine(y);
+       // QRgb* ps = (QRgb*)image.scanLine(y);
 
         float r=(float)qRed(startColor);
         float g=(float)qGreen(startColor);
@@ -77,13 +85,13 @@ void ImageWidget::TwoColorGradient(int n, QRgb startColor, QRgb endColor)
 
 }
 
-
 void ImageWidget::DrawLineWithAntialiasing(QRgb color,QPoint startP, QPoint endP)
 {
     int w = endP.x() - startP.x() ;
      int h = endP.y() - startP.y();
      int x=startP.x();
      int y=startP.y();
+
      int dx1 = 0, dy1 = 0, dx2 = 0, dy2 = 0 ;
      if (w<0) dx1 = -1 ; else if (w>0) dx1 = 1 ;
      if (h<0) dy1 = -1 ; else if (h>0) dy1 = 1 ;
@@ -97,9 +105,20 @@ void ImageWidget::DrawLineWithAntialiasing(QRgb color,QPoint startP, QPoint endP
          else if (h>0) dy2 = 1;
          dx2 = 0 ;
      }
-     int numerator = longest/2 ;
+/*
+QRgb* p=(QRgb*)resultImage.scanLine(y);
+QRgb ImageColor=p[0];
+//cout<<qRed(ImageColor)<<qGreen(ImageColor)<<qBlue(ImageColor);
+QRgb newColor1=min<QRgb>(qRgb(255,255,255),qRgb(1.0/2*(qRed(ImageColor)+qRed(color)),1.0/2*(qGreen(ImageColor)+qGreen(color)),1.0/2*(qBlue(ImageColor)+qBlue(color))));
+QRgb newColor2=min<QRgb>(qRgb(255,255,255),qRgb(2.0/3*(qRed(ImageColor)+qRed(color)),1.0/2*(qGreen(ImageColor)+qGreen(color)),1.0/2*(qBlue(ImageColor)+qBlue(color))));
+  */
+  int numerator = longest>>1 ;
      for (int i=0;i<=longest;i++) {
          DrawPoint(color,x,y) ;
+      //   DrawPoint(newColor1,x+1,y);
+      //   DrawPoint(newColor1,x-1,y);
+      //   DrawPoint(newColor2,x+2,y);
+      //   DrawPoint(newColor2,x-2,y);
          numerator += shortest ;
          if (numerator>longest) {
              numerator -= longest ;
@@ -109,28 +128,132 @@ void ImageWidget::DrawLineWithAntialiasing(QRgb color,QPoint startP, QPoint endP
              x += dx2 ;
              y += dy2 ;
          }
+
      }
 }
-/*
-void ImageWidget::DrawCircleBresenham()
+
+void ImageWidget::DrawCircleBresenham(QRgb color, QPoint centerP, int r)
 {
+    int xm=centerP.x();
+    int ym=centerP.y();
+
+    int x=-r,y=0,dd=2-2*r;
+      do {
+         DrawPoint(color,xm-x, ym+y);
+         DrawPoint(color,xm-y, ym-x);
+         DrawPoint(color,xm+x, ym-y);
+         DrawPoint(color,xm+y, ym+x);
+         r = dd;
+         if (r<=y) dd+=++y*2+1;
+         if (r>x || dd>y) dd += ++x*2+1;
+      } while(x<0);
+}
+
+void ImageWidget::DrawCurveBezierWithCasteljau(QRgb color, QPoint P1, QPoint P2, QPoint P3, QPoint P4)
+{
+QPoint P5,P6,P7,P8,P9,P10=P1,Ptemp;
+for(double t=0;t<=1;t+=0.05)
+{
+P5=P1+(P2-P1)*t;
+P6=P2+(P3-P2)*t;
+P7=P3+(P4-P3)*t;
+P8=P5+(P6-P5)*t;
+P9=P6+(P7-P6)*t;
+Ptemp=P10;
+P10=P8+(P9-P8)*t;
+DrawLineWithAntialiasing(color,Ptemp,P10);
+DrawPoint(color,P10.x(),P10.y());
+cout<<P10.x()<<" "<<P10.y()<<endl;
+}
+
 
 }
 
-void ImageWidget::DrawCurveCasteljau(QRgb color, QPoint P1, QPoint P2, QPoint P3, QPoint P4)
+class Segment{
+public:
+    int x;
+    int y;
+    int len;
+    Segment(){}
+};
+void ImageWidget::SmithAlgorithm(QRgb color, QPoint punkt)
 {
+    stack <Segment> stacker;
+    Segment s;
+    int len=0;
+    QRgb colorTemp=qRgb(255,255,255);//biale
+    QRgb colorTemp2=qRgb(0,0,0);
+   // cout<<punkt.x()<<punkt.y()<<endl;
+    int x=punkt.x(),y=punkt.y();
+    while(image.pixelColor(QPoint(x,y)) == colorTemp)
+    {
+        x--;
+ //cout<<x<<y<<endl;
+    }
+    s.x=x;
+    s.y=y;
+ //   cout<<"  "<<x<<y<<endl;
+    while(image.pixelColor(QPoint(x+1,y)) == colorTemp)
+    {
+        x++;
+        len++;
+        DrawPoint(color,x,y);
+    }
+    s.len=len;
+    stacker.push(s);
+
+    Segment SegmentToStack;
+    while(!stacker.empty())
+    {
+        //cout<<s.x<<s.y<<endl;
+        s=stacker.top();
+        stacker.pop();
+        int TempX=s.x;
+        while(TempX+s.len>=s.x)
+        {
+            //down
+            if(resultImage.pixelColor(s.x,s.y-1) == colorTemp && resultImage.pixelColor(s.x,s.y-1)!=color)
+            {
+                SegmentToStack.len=0;
+                SegmentToStack.y=s.y-1;
+                x=s.x;
+                while(resultImage.pixelColor(x-1,SegmentToStack.y)==colorTemp)
+                    x--;
+                SegmentToStack.x=x;
+                while(resultImage.pixelColor(x, SegmentToStack.y)==colorTemp)
+                {
+                    DrawPoint(color, x,SegmentToStack.y);
+                    SegmentToStack.len++;
+                    x++;
+                }
+                stacker.push(SegmentToStack);
+            }
+            //Up
+            if(resultImage.pixelColor(s.x,s.y+1) == colorTemp && resultImage.pixelColor(s.x,s.y+1)!=color)
+            {
+                SegmentToStack.len=0;
+                SegmentToStack.y=s.y+1;
+                x=s.x;
+                while(resultImage.pixelColor(x-1,SegmentToStack.y)==colorTemp)
+                    x--;
+                SegmentToStack.x=x;
+                while(resultImage.pixelColor(x, SegmentToStack.y)==colorTemp)
+                {
+                    DrawPoint(color, x,SegmentToStack.y);
+                    SegmentToStack.len++;
+                    x++;
+                }
+                stacker.push(SegmentToStack);
+            }
+            s.x++;
+        }
+
+    }
 
 }
-void ImageWidget::DrawBSplineWithAsManyPointsAsUWant()
-{
 
-}
-
-void ImageWidget::SmithAlgorithm()
-{
-
-}
 //Transformations
+/*
 void ImageWidget::Translation()
 {
 
@@ -161,10 +284,23 @@ void ImageWidget::keyPressEvent(QKeyEvent * e)
         DrawWhiteCard(512,512);
     }
     if(e->key()==Qt::Key_L){
-        DrawLineWithAntialiasing(qRgb(255,0,0),QPoint(10,30),QPoint(400,400 ));
+        DrawLineWithAntialiasing(qRgb(0,0,0),QPoint(20,30),QPoint(400,35 ));
       //  DrawLineWithAntialiasing(qRgb(255,0,0),QPoint(0,0),QPoint(512,256 ));
       //  DrawLineWithAntialiasing(qRgb(255,0,0),QPoint(0,0),QPoint(512,512 ));
       //  DrawLineWithAntialiasing(qRgb(255,0,0),QPoint(0,0),QPoint(256,512 ));
+    }
+    if(e->key()==Qt::Key_O){
+        DrawCircleBresenham(qRgb(255,0,0),QPoint(255,255),50);
+    }
+    if(e->key()==Qt::Key_C){
+        DrawCurveBezierWithCasteljau(qRgb(255,0,0),QPoint(50,400),QPoint(125,200),QPoint(200,250),QPoint(300,450));
+    }
+    if(e->key()==Qt::Key_S){
+      DrawLabirynth();
+    }
+    if(e->key()==Qt::Key_A){
+        //Aby użyć Algorytmu Smitha potrzebne jest coś do wypełnienia, proszę użyć funkcji wyżej :)
+               SmithAlgorithm(qRgb(255,0,0),QPoint(279,371));
     }
     update();
 }
