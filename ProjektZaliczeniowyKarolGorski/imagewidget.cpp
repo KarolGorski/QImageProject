@@ -6,6 +6,8 @@
 #include <cmath>
 #include <stack>
 #include <conio.h>
+#include <QCoreApplication>
+#define M_PI 3.14159265358979323846
 using namespace std;
 
 ImageWidget::ImageWidget(QWidget *parent): QWidget(parent)
@@ -14,48 +16,211 @@ ImageWidget::ImageWidget(QWidget *parent): QWidget(parent)
 DrawWhiteCard(512,512);
 transX=0;
 transY=0;
-rotateAngle=0;
-scaleX=0;
-scaleY=0;
-shearX=0;
-shearY=0;
+}
+void ImageWidget::manageTempImage()
+{
+    tempImage=resultImage;
+    transX=0;
+    transY=0;
 }
 
-void ImageWidget::DrawWhiteCard(int x, int y)
+void ImageWidget::keyPressEvent(QKeyEvent * e)
 {
-    image=QImage(x,y,QImage::Format_RGB32);
+    if(e->key()==Qt::Key_G){
+        TwoColorGradient(512,qRgb(255,0,0),qRgb(0,255,0));
+    manageTempImage();}
+    if(e->key()==Qt::Key_N){
+        DrawWhiteCard(512,512);
+        manageTempImage();
+    }
+    if(e->key()==Qt::Key_L){
+        DrawLine(qRgb(0,0,0),QPoint(20,30),QPoint(400,35 ));
+        DrawLine(qRgb(0,0,0),QPoint(40,40),QPoint(500,256 ));
+        DrawLine(qRgb(0,0,0),QPoint(40,40),QPoint(500,500 ));
+        DrawLine(qRgb(0,0,0),QPoint(40,40),QPoint(256,500 ));
+        manageTempImage();
+    }
+
+    if(e->key()==Qt::Key_O){
+        DrawCircleBresenham(qRgb(255,0,0),QPoint(255,255),50);
+        manageTempImage();
+
+    }
+    if(e->key()==Qt::Key_C){
+        DrawCurveBezierWithCasteljau(qRgb(255,0,0),QPoint(50,400),QPoint(125,200),QPoint(200,250),QPoint(300,450));
+        manageTempImage();
+    }
+    if(e->key()==Qt::Key_S){
+      DrawLabirynth();
+      manageTempImage();
+    }
+    if(e->key()==Qt::Key_A){
+        //Aby użyć Algorytmu Smitha potrzebne jest coś do wypełniania, proszę użyć funkcji wyżej :)
+        //Ostatnio ta funkcja wyżej przestała mi chodzić. Ah ten Qt. Ale udoskonaliłem Smitha tak, żeby malował nawet białą kartę :D
+        //Można sprawdzić ten algorytm za pomocą N i np figury koła :D
+               SmithAlgorithm(qRgb(255,0,0),QPoint(279,371));
+               manageTempImage();
+    }
+    if(e->key()==Qt::Key_Up){
+        transY+=-30;
+      //  transX=0;
+        translacja(transX,transY);
+           // ProcessImage();
+    }
+    if(e->key()==Qt::Key_Down){
+        transY+=30;
+     //   transX=0;
+        translacja(transX,transY);
+           // ProcessImage();
+    }
+    if(e->key()==Qt::Key_Right){
+        transX+=30;
+    //    transY=0;
+        translacja(transX,transY);
+          // ProcessImage();
+    }
+    if(e->key()==Qt::Key_Left){
+        transX+=-30;
+     //   transY=0;
+        translacja(transX,transY);
+        //    ProcessImage();
+    }
+    if(e->key()==Qt::Key_1){
+        manageTempImage();
+        rotacja(90);
+    }
+    if(e->key()==Qt::Key_2){
+        manageTempImage();
+        skalowanie(0.5,0.5);
+    }
+    if(e->key()==Qt::Key_3){
+        manageTempImage();
+        pochylenie(0.2,0.2);
+    }
+
+    update();
+}
+void ImageWidget::translacja(int tx , int ty)
+{
+    int x,y;
+    image=QImage(resultImage.width(),resultImage.height(),QImage::Format_RGB32);
     image.fill(qRgb(255,255,255));
+
     resultImage=image;
-}
-void ImageWidget::DrawLabirynth()
-{
-    image=QImage("Labirynt.png");
-    resultImage=image;
-}
-void ImageWidget::ProcessImage(){
-
-    for(int y=0;y<image.height();y++)
-        for(int x=0;x<image.width();x++){
-            int * t1=Translation(x,y,transX,transY);
-            QRgb* srcPicture=(QRgb*)image.scanLine(y);
-            QRgb* dstPicture=(QRgb*)resultImage.scanLine(t1[1]);
-            //resultImage[t1[0]]=image[x];
-
-            int r=max<float>(0,min<float>(255,qRed(srcPicture[x])));
-            int g=max<float>(0,min<float>(255,qGreen(srcPicture[x])));
-            int b=max<float>(0,min<float>(255,qBlue(srcPicture[x])));
-
-            DrawPoint(qRgb(r,g,b),t1[0],t1[1]);
 
 
+    for ( int wi = 0 ; wi < tempImage.width() ; wi++)
+    {
+        x = wi + tx;
+    for ( int he = 0 ; he < tempImage.height() ; he++)
+    {
+        y = he + ty ;
+
+            if ( x < tempImage.width() && y < tempImage.height() && x >= 0 && y >=0 )
+            image.setPixelColor(x,y, tempImage.pixelColor(wi,he) );
         }
+    }
+    resultImage=image;
+
+
 }
+void ImageWidget::rotacja(int stopnie)
+{
+    image=QImage(resultImage.width(),resultImage.height(),QImage::Format_RGB32);
+    image.fill(qRgb(255,255,255));
+
+    resultImage=image;
+
+    int x,y;
+
+    for ( int wi = 0 ; wi < tempImage.width() ; wi++)
+    {
+        for ( int he = 0 ; he < tempImage.height() ; he++)
+        {
+            int * w=Rotation(wi,he,stopnie);
+            x=w[0];
+            y=w[1];
+            if(stopnie%90==0){
+          // cout<<"wtf"<<" "<<x<<" "<<y<<endl;
+            if(x<0 && y<0) {x=abs(w[0]);y=abs(w[1]);}
+            if(x>=0 && y<0) {x=w[0];y=tempImage.height()-abs(w[1]);}
+            if(x<0 && y>=0) {x=tempImage.width()-abs(w[0]);y=w[1];}
+            }
+
+            if ( x < tempImage.width() && y < tempImage.height() && x >= 0 && y >=0 )
+            image.setPixelColor(x,y, tempImage.pixelColor(wi,he) );
+        }
+    }
+
+    resultImage=image;
+    tempImage=image;
+}
+
+void ImageWidget::skalowanie(double sx , double sy)
+{
+
+    image=QImage(resultImage.width(),resultImage.height(),QImage::Format_RGB32);
+    image.fill(qRgb(255,255,255));
+
+    resultImage=image;
+
+    double x,y;
+    for ( int he = 0 ; he < image.height() ; he++)
+    {
+        y = he * sy;
+        for ( int wi = 0 ; wi < image.width() ; wi++)
+        {
+            x = wi * sx;
+            if ( x < image.width() && y < image.height() && x >= 0 && y >=0 )
+                image.setPixelColor(x,y, tempImage.pixelColor(wi,he) );
+        }
+    }
+    resultImage=image;
+}
+
+void ImageWidget::pochylenie(double ax, double ay)
+{
+    image=QImage(resultImage.width(),resultImage.height(),QImage::Format_RGB32);
+    image.fill(qRgb(255,255,255));
+
+    resultImage=image;
+    double x,y;
+    for ( int wi = 0 ; wi < image.width() ; wi++)
+    {
+        for ( int he = 0 ; he < image.height() ; he++)
+        {
+            int * w=Shear(wi,he,ax,ay);
+            x=w[0];
+            y=w[1];
+            if ( x < image.width() && y < image.height() && x >= 0 && y >=0 )
+                image.setPixelColor(x,y, tempImage.pixelColor(wi,he) );
+        }
+    }
+    resultImage=image;
+}
+
 
 void ImageWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.drawImage(0,0,resultImage);
 }
+
+void ImageWidget::DrawWhiteCard(int x, int y)
+{
+   image=QImage(x,y,QImage::Format_RGB32);
+   image.fill(qRgb(255,255,255));
+
+   resultImage=image;
+
+
+}
+void ImageWidget::DrawLabirynth()
+{
+    image=QImage(QCoreApplication::applicationDirPath()+"Labirynt.png");
+    resultImage=image;
+}
+
 
 void ImageWidget::DrawPoint(QRgb color, int x,int y)
 {
@@ -107,7 +272,7 @@ void ImageWidget::TwoColorGradient(int n, QRgb startColor, QRgb endColor)
 
 }
 
-void ImageWidget::DrawLineWithAntialiasing(QRgb color,QPoint startP, QPoint endP)
+void ImageWidget::DrawLine(QRgb color,QPoint startP, QPoint endP)
 {
     int w = endP.x() - startP.x() ;
      int h = endP.y() - startP.y();
@@ -127,20 +292,21 @@ void ImageWidget::DrawLineWithAntialiasing(QRgb color,QPoint startP, QPoint endP
          else if (h>0) dy2 = 1;
          dx2 = 0 ;
      }
-/*
-QRgb* p=(QRgb*)resultImage.scanLine(y);
-QRgb ImageColor=p[0];
-//cout<<qRed(ImageColor)<<qGreen(ImageColor)<<qBlue(ImageColor);
-QRgb newColor1=min<QRgb>(qRgb(255,255,255),qRgb(1.0/2*(qRed(ImageColor)+qRed(color)),1.0/2*(qGreen(ImageColor)+qGreen(color)),1.0/2*(qBlue(ImageColor)+qBlue(color))));
-QRgb newColor2=min<QRgb>(qRgb(255,255,255),qRgb(2.0/3*(qRed(ImageColor)+qRed(color)),1.0/2*(qGreen(ImageColor)+qGreen(color)),1.0/2*(qBlue(ImageColor)+qBlue(color))));
-  */
+
+//QRgb* p=(QRgb*)resultImage.scanLine(y);
+//QRgb ImageColor=p[0];
+
   int numerator = longest>>1 ;
      for (int i=0;i<=longest;i++) {
+         //QRgb ImageColor=p[x];
+         //QRgb newColor1=min<QRgb>(qRgb(255,255,255),qRgb(1.0/2*(qRed(ImageColor)+qRed(color)),1.0/2*(qGreen(ImageColor)+qGreen(color)),1.0/2*(qBlue(ImageColor)+qBlue(color))));
+         //QRgb newColor2=min<QRgb>(qRgb(255,255,255),qRgb(2.0/3*(qRed(ImageColor)+qRed(color)),2.0/3*(qGreen(ImageColor)+qGreen(color)),2.0/3*(qBlue(ImageColor)+qBlue(color))));
+
          DrawPoint(color,x,y) ;
-      //   DrawPoint(newColor1,x+1,y);
-      //   DrawPoint(newColor1,x-1,y);
-      //   DrawPoint(newColor2,x+2,y);
-      //   DrawPoint(newColor2,x-2,y);
+        // if(x<image.width()-2)  DrawPoint(newColor1,x+1,y);
+        // if(x>0)                DrawPoint(newColor1,x-1,y);
+        // if(y<image.height()-2) DrawPoint(newColor2,x,y+1);
+        // if(y>0)                DrawPoint(newColor2,x,y-1);
          numerator += shortest ;
          if (numerator>longest) {
              numerator -= longest ;
@@ -183,7 +349,7 @@ P8=P5+(P6-P5)*t;
 P9=P6+(P7-P6)*t;
 Ptemp=P10;
 P10=P8+(P9-P8)*t;
-DrawLineWithAntialiasing(color,Ptemp,P10);
+DrawLine(color,Ptemp,P10);
 DrawPoint(color,P10.x(),P10.y());
 cout<<P10.x()<<" "<<P10.y()<<endl;
 }
@@ -204,12 +370,13 @@ void ImageWidget::SmithAlgorithm(QRgb color, QPoint punkt)
     Segment s;
     int len=0;
     QRgb colorTemp=qRgb(255,255,255);//biale
-    QRgb colorTemp2=qRgb(0,0,0);
+    //QRgb colorTemp2=qRgb(0,0,0);
    // cout<<punkt.x()<<punkt.y()<<endl;
     int x=punkt.x(),y=punkt.y();
     while(image.pixelColor(QPoint(x,y)) == colorTemp)
     {
         x--;
+        if(x==0) break;
  //cout<<x<<y<<endl;
     }
     s.x=x;
@@ -220,6 +387,7 @@ void ImageWidget::SmithAlgorithm(QRgb color, QPoint punkt)
         x++;
         len++;
         DrawPoint(color,x,y);
+        if(x==image.width()) break;
     }
     s.len=len;
     stacker.push(s);
@@ -240,13 +408,18 @@ void ImageWidget::SmithAlgorithm(QRgb color, QPoint punkt)
                 SegmentToStack.y=s.y-1;
                 x=s.x;
                 while(resultImage.pixelColor(x-1,SegmentToStack.y)==colorTemp)
+                {
+
                     x--;
+                if(x==0) break;
+                }
                 SegmentToStack.x=x;
                 while(resultImage.pixelColor(x, SegmentToStack.y)==colorTemp)
                 {
                     DrawPoint(color, x,SegmentToStack.y);
                     SegmentToStack.len++;
                     x++;
+                    if(x==image.width()) break;
                 }
                 stacker.push(SegmentToStack);
             }
@@ -257,13 +430,17 @@ void ImageWidget::SmithAlgorithm(QRgb color, QPoint punkt)
                 SegmentToStack.y=s.y+1;
                 x=s.x;
                 while(resultImage.pixelColor(x-1,SegmentToStack.y)==colorTemp)
+                {
                     x--;
+                    if(x==0) break;
+                }
                 SegmentToStack.x=x;
                 while(resultImage.pixelColor(x, SegmentToStack.y)==colorTemp)
                 {
                     DrawPoint(color, x,SegmentToStack.y);
                     SegmentToStack.len++;
                     x++;
+                    if(x==image.width()) break;
                 }
                 stacker.push(SegmentToStack);
             }
@@ -274,106 +451,35 @@ void ImageWidget::SmithAlgorithm(QRgb color, QPoint punkt)
 
 }
 
-//Transformations
 
-int * ImageWidget::Translation(int x, int y, int tx, int ty)
-{
-int MatrixForTranslation[9]={
-1,0,0,
-0,1,0,
-tx,ty,1};
-int vec[3]={x,y,1};
-
-        int *returnable=new int[3];
-returnable[0]=vec[0]*MatrixForTranslation[0]+vec[1]*MatrixForTranslation[3]+vec[2]*MatrixForTranslation[6];
-returnable[1]=vec[0]*MatrixForTranslation[1]+vec[1]*MatrixForTranslation[4]+vec[2]*MatrixForTranslation[7];
-returnable[1]=vec[0]*MatrixForTranslation[2]+vec[1]*MatrixForTranslation[5]+vec[2]*MatrixForTranslation[8];
-        return returnable;
-}
-
-
-int* ImageWidget::Rotation(int x,int y,double angle){
-    int s=sin(angle)*256;
-    int c=cos(angle)*256;
+int* ImageWidget::Rotation(int x,int y,double stopnie){
+    int s=sin(stopnie*2*M_PI/360)*256;
+    int c=cos(stopnie*2*M_PI/360)*256;
 
     int rotM[9]={
 c,s,0,
 -s,c,0,
 0,0,1};
-    int v[3]={x,y,1};
+    int vec[3]={x,y,1};
     int *returnable=new int[3];
 returnable[0]=(vec[0]*rotM[0]+vec[1]*rotM[3]+vec[2]*rotM[6])>>8;
 returnable[1]=(vec[0]*rotM[1]+vec[1]*rotM[4]+vec[2]*rotM[7])>>8;
-returnable[1]=(vec[0]*rotM[2]+vec[1]*rotM[5]+vec[2]*rotM[8])>>8;
+returnable[2]=(vec[0]*rotM[2]+vec[1]*rotM[5]+vec[2]*rotM[8])>>8;
     return returnable;
-}
-int *ImageWidget::Scale(int x,int y,double sx,double sy){
-    int sxi=sx*256;
-    int syi=sy*256;
 
-    int scaleM[9]={
-sxi,0,0,
-0,syi,0,
-0,0,1};
-    int v[3]={x,y,1};
-    int *returnable=new int[3];
-returnable[0]=(vec[0]*scaleM[0]+vec[1]*scaleM[3]+vec[2]*scaleM[6])>>8;
-returnable[1]=(vec[0]*scaleM[1]+vec[1]*scaleM[4]+vec[2]*scaleM[7])>>8;
-returnable[1]=(vec[0]*scaleM[2]+vec[1]*scaleM[5]+vec[2]*scaleM[8])>>8;
-    return returnable;
 }
 
-int * ImageWidget::Shear(int x,int y,double ax,double ay){
-    double shearMatrix[9]={
+int* ImageWidget::Shear(int x,int y,double ax,double ay){
+    double ShearM[9]={
 1,ay,0,
 ax,1,0,
 0,0,1};
-    int v[3]={x,y,1};
+    int vec[3]={x,y,1};
     int *returnable=new int[3];
-returnable[0]=(vec[0]*ShearM[0]+vec[1]*ShearM[3]+vec[2]*ShearM[6])>>8;
-returnable[1]=(vec[0]*ShearM[1]+vec[1]*ShearM[4]+vec[2]*ShearM[7])>>8;
-returnable[1]=(vec[0]*ShearM[2]+vec[1]*ShearM[5]+vec[2]*ShearM[8])>>8;
+returnable[0]=(vec[0]*ShearM[0]+vec[1]*ShearM[3]+vec[2]*ShearM[6]);
+returnable[1]=(vec[0]*ShearM[1]+vec[1]*ShearM[4]+vec[2]*ShearM[7]);
+returnable[2]=(vec[0]*ShearM[2]+vec[1]*ShearM[5]+vec[2]*ShearM[8]);
     return returnable;
 }
 
-void ImageWidget::keyPressEvent(QKeyEvent * e)
-{
-    if(e->key()==Qt::Key_G){
-        TwoColorGradient(512,qRgb(255,0,0),qRgb(0,255,0));}
-    if(e->key()==Qt::Key_N){
-        DrawWhiteCard(512,512);
-    }
-    if(e->key()==Qt::Key_L){
-        DrawLineWithAntialiasing(qRgb(0,0,0),QPoint(20,30),QPoint(400,35 ));
-      //  DrawLineWithAntialiasing(qRgb(255,0,0),QPoint(0,0),QPoint(512,256 ));
-      //  DrawLineWithAntialiasing(qRgb(255,0,0),QPoint(0,0),QPoint(512,512 ));
-      //  DrawLineWithAntialiasing(qRgb(255,0,0),QPoint(0,0),QPoint(256,512 ));
-    }
-    if(e->key()==Qt::Key_O){
-        DrawCircleBresenham(qRgb(255,0,0),QPoint(255,255),50);
-    }
-    if(e->key()==Qt::Key_C){
-        DrawCurveBezierWithCasteljau(qRgb(255,0,0),QPoint(50,400),QPoint(125,200),QPoint(200,250),QPoint(300,450));
-    }
-    if(e->key()==Qt::Key_S){
-      DrawLabirynth();
-    }
-    if(e->key()==Qt::Key_A){
-        //Aby użyć Algorytmu Smitha potrzebne jest coś do wypełnienia, proszę użyć funkcji wyżej :)
-               SmithAlgorithm(qRgb(255,0,0),QPoint(279,371));
-    }
-    if(e->key()==Qt::Key_Up){
-        transY+=30;
-    }
-    if(e->key()==Qt::Key_Down){
-        transY-=30;
-    }
-    if(e->key()==Qt::Key_Right){
-        transX+=30;
-    }
-    if(e->key()==Qt::Key_Left){
-        transX-=30;
-    }
-    ProcessImage();
-    update();
-}
+
