@@ -12,8 +12,13 @@ ImageWidget::ImageWidget(QWidget *parent): QWidget(parent)
 {
 
 DrawWhiteCard(512,512);
-//DrawLabirynth();
-
+transX=0;
+transY=0;
+rotateAngle=0;
+scaleX=0;
+scaleY=0;
+shearX=0;
+shearY=0;
 }
 
 void ImageWidget::DrawWhiteCard(int x, int y)
@@ -27,7 +32,24 @@ void ImageWidget::DrawLabirynth()
     image=QImage("Labirynt.png");
     resultImage=image;
 }
+void ImageWidget::ProcessImage(){
 
+    for(int y=0;y<image.height();y++)
+        for(int x=0;x<image.width();x++){
+            int * t1=Translation(x,y,transX,transY);
+            QRgb* srcPicture=(QRgb*)image.scanLine(y);
+            QRgb* dstPicture=(QRgb*)resultImage.scanLine(t1[1]);
+            //resultImage[t1[0]]=image[x];
+
+            int r=max<float>(0,min<float>(255,qRed(srcPicture[x])));
+            int g=max<float>(0,min<float>(255,qGreen(srcPicture[x])));
+            int b=max<float>(0,min<float>(255,qBlue(srcPicture[x])));
+
+            DrawPoint(qRgb(r,g,b),t1[0],t1[1]);
+
+
+        }
+}
 
 void ImageWidget::paintEvent(QPaintEvent *)
 {
@@ -253,28 +275,66 @@ void ImageWidget::SmithAlgorithm(QRgb color, QPoint punkt)
 }
 
 //Transformations
-/*
-void ImageWidget::Translation()
-{
 
-}
-void ImageWidget::RotationFromCenter()
+int * ImageWidget::Translation(int x, int y, int tx, int ty)
 {
+int MatrixForTranslation[9]={
+1,0,0,
+0,1,0,
+tx,ty,1};
+int vec[3]={x,y,1};
 
+        int *returnable=new int[3];
+returnable[0]=vec[0]*MatrixForTranslation[0]+vec[1]*MatrixForTranslation[3]+vec[2]*MatrixForTranslation[6];
+returnable[1]=vec[0]*MatrixForTranslation[1]+vec[1]*MatrixForTranslation[4]+vec[2]*MatrixForTranslation[7];
+returnable[1]=vec[0]*MatrixForTranslation[2]+vec[1]*MatrixForTranslation[5]+vec[2]*MatrixForTranslation[8];
+        return returnable;
 }
-void ImageWidget::ScaleFromCenter()
-{
 
-}
-void ImageWidget::Lean()
-{
 
-}
-void ImageWidget::BilinearInterpolation()
-{
+int* ImageWidget::Rotation(int x,int y,double angle){
+    int s=sin(angle)*256;
+    int c=cos(angle)*256;
 
+    int rotM[9]={
+c,s,0,
+-s,c,0,
+0,0,1};
+    int v[3]={x,y,1};
+    int *returnable=new int[3];
+returnable[0]=(vec[0]*rotM[0]+vec[1]*rotM[3]+vec[2]*rotM[6])>>8;
+returnable[1]=(vec[0]*rotM[1]+vec[1]*rotM[4]+vec[2]*rotM[7])>>8;
+returnable[1]=(vec[0]*rotM[2]+vec[1]*rotM[5]+vec[2]*rotM[8])>>8;
+    return returnable;
 }
-*/
+int *ImageWidget::Scale(int x,int y,double sx,double sy){
+    int sxi=sx*256;
+    int syi=sy*256;
+
+    int scaleM[9]={
+sxi,0,0,
+0,syi,0,
+0,0,1};
+    int v[3]={x,y,1};
+    int *returnable=new int[3];
+returnable[0]=(vec[0]*scaleM[0]+vec[1]*scaleM[3]+vec[2]*scaleM[6])>>8;
+returnable[1]=(vec[0]*scaleM[1]+vec[1]*scaleM[4]+vec[2]*scaleM[7])>>8;
+returnable[1]=(vec[0]*scaleM[2]+vec[1]*scaleM[5]+vec[2]*scaleM[8])>>8;
+    return returnable;
+}
+
+int * ImageWidget::Shear(int x,int y,double ax,double ay){
+    double shearMatrix[9]={
+1,ay,0,
+ax,1,0,
+0,0,1};
+    int v[3]={x,y,1};
+    int *returnable=new int[3];
+returnable[0]=(vec[0]*ShearM[0]+vec[1]*ShearM[3]+vec[2]*ShearM[6])>>8;
+returnable[1]=(vec[0]*ShearM[1]+vec[1]*ShearM[4]+vec[2]*ShearM[7])>>8;
+returnable[1]=(vec[0]*ShearM[2]+vec[1]*ShearM[5]+vec[2]*ShearM[8])>>8;
+    return returnable;
+}
 
 void ImageWidget::keyPressEvent(QKeyEvent * e)
 {
@@ -302,5 +362,18 @@ void ImageWidget::keyPressEvent(QKeyEvent * e)
         //Aby użyć Algorytmu Smitha potrzebne jest coś do wypełnienia, proszę użyć funkcji wyżej :)
                SmithAlgorithm(qRgb(255,0,0),QPoint(279,371));
     }
+    if(e->key()==Qt::Key_Up){
+        transY+=30;
+    }
+    if(e->key()==Qt::Key_Down){
+        transY-=30;
+    }
+    if(e->key()==Qt::Key_Right){
+        transX+=30;
+    }
+    if(e->key()==Qt::Key_Left){
+        transX-=30;
+    }
+    ProcessImage();
     update();
 }
